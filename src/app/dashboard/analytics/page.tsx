@@ -1,15 +1,17 @@
 'use client';
 
 import { useBookings } from '@/hooks/useBookings';
-import { BLOCKS_DATA } from '@/lib/data';
+import { useClassrooms } from '@/hooks/useClassrooms';
 import { motion } from 'framer-motion';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { Users, Calendar as CalendarIcon, Building2, TrendingUp } from 'lucide-react';
+import { eachDayOfInterval, parseISO, format } from 'date-fns';
 
 export default function AnalyticsPage() {
     const { bookings } = useBookings();
+    const { classrooms } = useClassrooms();
 
-    const totalClassrooms = Object.values(BLOCKS_DATA).flat().length;
+    const totalClassrooms = classrooms.length;
     const totalBookings = bookings.length;
 
     // Most Booked Block
@@ -31,7 +33,19 @@ export default function AnalyticsPage() {
     // Booking count per day chart data (last 7 days of bookings, or grouping by date)
     // To keep it simple, let's just show top 5 booked dates
     const dateCounts = bookings.reduce((acc, b) => {
-        acc[b.date] = (acc[b.date] || 0) + 1;
+        try {
+            const daysSpan = eachDayOfInterval({
+                start: parseISO(b.date),
+                end: parseISO(b.endDate || b.date)
+            });
+            daysSpan.forEach(day => {
+                const dateStr = format(day, 'yyyy-MM-dd');
+                acc[dateStr] = (acc[dateStr] || 0) + 1;
+            });
+        } catch (e) {
+            // fallback if parse fails
+            acc[b.date] = (acc[b.date] || 0) + 1;
+        }
         return acc;
     }, {} as Record<string, number>);
 

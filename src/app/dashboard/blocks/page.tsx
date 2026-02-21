@@ -1,7 +1,7 @@
 'use client';
 
 import { useBookings } from '@/hooks/useBookings';
-import { BLOCKS_DATA, ROOM_CAPACITIES } from '@/lib/data';
+import { useClassrooms } from '@/hooks/useClassrooms';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -10,6 +10,7 @@ import { BookingModal } from '@/components/dashboard/BookingModal';
 
 export default function BlocksPage() {
     const { bookings } = useBookings();
+    const { classrooms } = useClassrooms();
     const [selectedDate, setSelectedDate] = useState<string>(() => {
         // Default to today
         const now = new Date();
@@ -19,7 +20,7 @@ export default function BlocksPage() {
     const [selectedRoom, setSelectedRoom] = useState<{ block: string, room: string } | null>(null);
 
     const getRoomStatus = (room: string, date: string) => {
-        const roomBookings = bookings.filter(b => b.room === room && b.date === date);
+        const roomBookings = bookings.filter(b => b.room === room && date >= b.date && date <= (b.endDate || b.date));
 
         if (roomBookings.length === 0) return 'available';
 
@@ -54,7 +55,13 @@ export default function BlocksPage() {
         }
     };
 
-    const blocks = Object.entries(BLOCKS_DATA);
+    const blocksData = classrooms.reduce((acc, c) => {
+        if (!acc[c.block]) acc[c.block] = [];
+        acc[c.block].push(c);
+        return acc;
+    }, {} as Record<string, typeof classrooms>);
+
+    const blocks = Object.entries(blocksData).sort((a, b) => a[0].localeCompare(b[0]));
 
     return (
         <div className="space-y-8">
@@ -93,7 +100,8 @@ export default function BlocksPage() {
 
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                             <AnimatePresence>
-                                {rooms.map((room) => {
+                                {rooms.map((roomObj) => {
+                                    const room = roomObj.room;
                                     const status = getRoomStatus(room, selectedDate);
 
                                     return (
@@ -102,7 +110,7 @@ export default function BlocksPage() {
                                             whileHover={{ scale: 1.05 }}
                                             whileTap={{ scale: 0.95 }}
                                             onClick={() => setSelectedRoom({ block: blockName, room })}
-                                            key={room}
+                                            key={roomObj.id}
                                             className={cn(
                                                 "relative flex flex-col items-start p-4 rounded-xl border transition-all text-left",
                                                 getStatusColor(status)
@@ -117,7 +125,7 @@ export default function BlocksPage() {
 
                                             <div className="flex items-center text-xs opacity-80 mt-auto">
                                                 <Users className="w-3.5 h-3.5 mr-1" />
-                                                {ROOM_CAPACITIES[room]} Cap
+                                                {roomObj.capacity} Cap
                                             </div>
                                         </motion.button>
                                     );

@@ -4,7 +4,8 @@ export type Booking = {
     room: string;
     name: string;
     department: string;
-    date: string; // YYYY-MM-DD
+    date: string; // Start date YYYY-MM-DD
+    endDate?: string; // End date YYYY-MM-DD
     startTime: string; // HH:mm
     endTime: string; // HH:mm
     purpose: string;

@@ -38,7 +38,8 @@ export default function DashboardLayout({
             'Room': b.room,
             'Name': b.name,
             'Department': b.department,
-            'Date': b.date,
+            'Start Date': b.date,
+            'End Date': b.endDate || b.date,
             'Start Time': b.startTime,
             'End Time': b.endTime,
             'Purpose': b.purpose
@@ -51,7 +52,7 @@ export default function DashboardLayout({
         // Auto-size columns slightly
         const columnWidths = [
             { wch: 10 }, { wch: 10 }, { wch: 20 }, { wch: 20 },
-            { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 40 }
+            { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 40 }
         ];
         worksheet['!cols'] = columnWidths;
 

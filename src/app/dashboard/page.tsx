@@ -1,7 +1,7 @@
 'use client';
 
 import { useBookings } from '@/hooks/useBookings';
-import { BLOCKS_DATA } from '@/lib/data';
+import { useClassrooms } from '@/hooks/useClassrooms';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar as CalendarIcon, Building2, TrendingUp, Clock } from 'lucide-react';
 import { format } from 'date-fns';
@@ -9,12 +9,13 @@ import Link from 'next/link';
 
 export default function Dashboard() {
     const { bookings } = useBookings();
+    const { classrooms } = useClassrooms();
 
-    const totalClassrooms = Object.values(BLOCKS_DATA).flat().length;
+    const totalClassrooms = classrooms.length;
     const totalBookings = bookings.length;
 
     const todayStr = format(new Date(), 'yyyy-MM-dd');
-    const todayBookings = bookings.filter(b => b.date === todayStr);
+    const todayBookings = bookings.filter(b => todayStr >= b.date && todayStr <= (b.endDate || b.date));
 
     const stats = [
         { name: 'Total Classrooms', value: totalClassrooms, icon: Building2, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-100 dark:bg-blue-900/30' },
@@ -67,7 +68,7 @@ export default function Dashboard() {
                 >
                     <div className="flex justify-between items-center mb-6">
                         <h2 className="text-lg font-bold text-gray-900 dark:text-white">Today&apos;s Schedule</h2>
-                        <Link href="/calendar" className="text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
+                        <Link href="/dashboard/calendar" className="text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
                             View Calendar &rarr;
                         </Link>
                     </div>
@@ -125,7 +126,7 @@ export default function Dashboard() {
 
                     <div className="space-y-4">
                         <Link
-                            href="/blocks"
+                            href="/dashboard/blocks"
                             className="group inline-flex items-center justify-between w-full p-4 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 transition-all backdrop-blur-sm"
                         >
                             <div className="flex items-center">
@@ -136,7 +137,7 @@ export default function Dashboard() {
                         </Link>
 
                         <Link
-                            href="/analytics"
+                            href="/dashboard/analytics"
                             className="group inline-flex items-center justify-between w-full p-4 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 transition-all backdrop-blur-sm"
                         >
                             <div className="flex items-center">

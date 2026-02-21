@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, AlertCircle } from 'lucide-react';
+import { X, AlertCircle, Trash2 } from 'lucide-react';
 import { useBookings } from '@/hooks/useBookings';
 
 interface BookingModalProps {
@@ -14,12 +14,13 @@ interface BookingModalProps {
 }
 
 export function BookingModal({ isOpen, onClose, block, room, defaultDate }: BookingModalProps) {
-    const { addBooking, checkConflict, bookings } = useBookings();
+    const { addBooking, checkConflict, bookings, removeBooking } = useBookings();
 
     const [formData, setFormData] = useState({
         name: '',
         department: '',
         date: defaultDate,
+        endDate: defaultDate,
         startTime: '10:00',
         endTime: '11:00',
         purpose: ''
@@ -30,7 +31,7 @@ export function BookingModal({ isOpen, onClose, block, room, defaultDate }: Book
     // Reset form when opened for a new room/day
     useEffect(() => {
         if (isOpen) {
-            setFormData(prev => ({ ...prev, date: defaultDate }));
+            setFormData(prev => ({ ...prev, date: defaultDate, endDate: defaultDate }));
             setError(null);
         }
     }, [isOpen, defaultDate]);
@@ -48,9 +49,9 @@ export function BookingModal({ isOpen, onClose, block, room, defaultDate }: Book
         }
 
         // Check conflict
-        const hasConflict = checkConflict(room, formData.date, formData.startTime, formData.endTime);
+        const hasConflict = checkConflict(room, formData.date, formData.endDate, formData.startTime, formData.endTime);
         if (hasConflict) {
-            setError("Time conflict detected! This room is already booked during this time period on the selected date.");
+            setError("Time conflict detected! This room is already booked during this time period on the selected dates.");
             return;
         }
 
@@ -63,8 +64,12 @@ export function BookingModal({ isOpen, onClose, block, room, defaultDate }: Book
         onClose();
     };
 
-    const roomBookingsToday = bookings.filter(b => b.room === room && b.date === formData.date)
-        .sort((a, b) => a.startTime.localeCompare(b.startTime));
+    const roomBookingsToday = bookings.filter(b => {
+        if (b.room !== room) return false;
+        const bStart = b.date;
+        const bEnd = b.endDate || b.date;
+        return formData.date <= bEnd && formData.endDate >= bStart;
+    }).sort((a, b) => a.startTime.localeCompare(b.startTime));
 
     return (
         <AnimatePresence>
@@ -126,12 +131,22 @@ export function BookingModal({ isOpen, onClose, block, room, defaultDate }: Book
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Start Date</label>
                                     <input
                                         required
                                         type="date"
                                         value={formData.date}
                                         onChange={(e) => setFormData(f => ({ ...f, date: e.target.value }))}
+                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:[color-scheme:dark]"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">End Date</label>
+                                    <input
+                                        required
+                                        type="date"
+                                        value={formData.endDate}
+                                        onChange={(e) => setFormData(f => ({ ...f, endDate: e.target.value }))}
                                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:[color-scheme:dark]"
                                     />
                                 </div>
@@ -198,15 +213,25 @@ export function BookingModal({ isOpen, onClose, block, room, defaultDate }: Book
 
                         {/* Sidebar showing current bookings for the selected date */}
                         <div className="hidden md:block w-64 border-l border-gray-200 dark:border-gray-700 pl-6 mt-6 md:mt-0">
-                            <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Bookings on {formData.date}</h3>
+                            <h3 className="font-semibold text-gray-900 dark:text-white mb-4">
+                                Bookings ({formData.date} {formData.date !== formData.endDate ? `to ${formData.endDate}` : ''})
+                            </h3>
                             {roomBookingsToday.length === 0 ? (
                                 <p className="text-sm text-gray-500 dark:text-gray-400">No bookings for this date across this room yet.</p>
                             ) : (
                                 <div className="space-y-3">
                                     {roomBookingsToday.map((b) => (
-                                        <div key={b.id} className="p-3 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 text-sm">
-                                            <div className="font-medium text-gray-900 dark:text-white">{b.startTime} - {b.endTime}</div>
-                                            <div className="text-gray-600 dark:text-gray-400 mt-1 line-clamp-1">{b.name}</div>
+                                        <div key={b.id} className="p-3 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 text-sm group relative">
+                                            <div className="font-medium text-gray-900 dark:text-white pr-6">{b.startTime} - {b.endTime}</div>
+                                            <div className="text-gray-600 dark:text-gray-400 mt-1 line-clamp-1 pr-6">{b.name}</div>
+                                            <button
+                                                onClick={() => removeBooking(b.id)}
+                                                className="absolute top-3 right-3 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-700 dark:hover:text-red-400 p-1"
+                                                title="Delete booking"
+                                                type="button"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
                                         </div>
                                     ))}
                                 </div>

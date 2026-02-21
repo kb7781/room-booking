@@ -3,12 +3,12 @@
 import { useState } from 'react';
 import { useBookings } from '@/hooks/useBookings';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from 'date-fns';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function CalendarPage() {
-    const { bookings } = useBookings();
+    const { bookings, removeBooking } = useBookings();
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
@@ -21,12 +21,12 @@ export default function CalendarPage() {
     const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
 
     const selectedDateStr = format(selectedDate, 'yyyy-MM-dd');
-    const selectedDateBookings = bookings.filter(b => b.date === selectedDateStr)
+    const selectedDateBookings = bookings.filter(b => selectedDateStr >= b.date && selectedDateStr <= (b.endDate || b.date))
         .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
     const getBookingsCountForDate = (date: Date) => {
         const dateStr = format(date, 'yyyy-MM-dd');
-        return bookings.filter(b => b.date === dateStr).length;
+        return bookings.filter(b => dateStr >= b.date && dateStr <= (b.endDate || b.date)).length;
     };
 
     return (
@@ -145,6 +145,13 @@ export default function CalendarPage() {
                                             </span>
                                             <h4 className="font-semibold text-gray-900 dark:text-white line-clamp-1">{booking.purpose}</h4>
                                         </div>
+                                        <button
+                                            onClick={() => removeBooking(booking.id)}
+                                            className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1 mt-1 rounded hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
+                                            title="Delete booking"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
                                     </div>
 
                                     <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">

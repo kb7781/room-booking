@@ -32,7 +32,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const login = () => {
         localStorage.setItem('isAdminAuth', 'true');
         setIsAuthenticated(true);
-        router.push('/');
+        router.push('/dashboard');
     };
 
     const logout = () => {
